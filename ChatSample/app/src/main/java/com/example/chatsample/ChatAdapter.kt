@@ -14,9 +14,7 @@ class ChatAdapter(private val context: Context, private val arrayList: ArrayList
     private lateinit var preferences: SharedPreferences
 
     fun addItem(item: ChatModel) {//아이템 추가
-        if (arrayList != null) {
-            arrayList.add(item)
-    }
+        arrayList.add(item)
     }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
@@ -42,13 +40,11 @@ class ChatAdapter(private val context: Context, private val arrayList: ArrayList
         //onCreateViewHolder에서 리턴받은 뷰홀더가 Holder라면 내채팅, item_my_chat의 뷰들을 초기화 해줌
         if (viewHolder is Holder) {
             (viewHolder).chatMessage?.text = arrayList[i].message
-            (viewHolder).chatTime?.text = arrayList[i].date_time
         }
         //onCreateViewHolder에서 리턴받은 뷰홀더가 Holder2라면 상대의 채팅, item_your_chat의 뷰들을 초기화 해줌
         else if(viewHolder is Holder2) {
             (viewHolder).chatFrinedName?.text = arrayList[i].name
             (viewHolder).chatMessage?.text = arrayList[i].message
-            (viewHolder).chatTime?.text = arrayList[i].date_time
         }
 
     }
