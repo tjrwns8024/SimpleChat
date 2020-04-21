@@ -17,6 +17,7 @@ import kotlinx.android.synthetic.main.item_your_chat.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.net.URISyntaxException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -31,6 +32,11 @@ class ChatRoomActivity: AppCompatActivity() {
 
     var arrayList = arrayListOf<ChatModel>()
     private val mAdapter = ChatAdapter(this, arrayList)
+
+    override fun onStop() {
+        super.onStop()
+        mSocket.disconnect()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -49,8 +55,6 @@ class ChatRoomActivity: AppCompatActivity() {
         send_btn_message = findViewById(R.id.send_btn_message)
         message = findViewById(R.id.message)
 
-        Log.d("ddf","dd")
-
         if(savedInstanceState!=null){
             hasConnection=savedInstanceState.getBoolean("hasConnection")
         }
@@ -59,22 +63,26 @@ class ChatRoomActivity: AppCompatActivity() {
         }else {
             try{
                 mSocket.connect()
-                Log.d("hihi","adfas")
-            }catch (e:IOException){
-                e.printStackTrace()
+                val result:Boolean = mSocket.connected()
+                if(result)  Log.d("socket connected", "소켓 연결 성공")
+                else Log.e("socket failed","소캣 실패")
+                Log.d("socket connect","지니감")
+            }catch (ue:URISyntaxException){
+                ue.printStackTrace()
             }
 
+            mSocket.on("MESSAGE", onNewUser)
 
-            mSocket.on("NAME", onNewUser)
-            mSocket.on("SEND", onNewMessage)
 
-            val userId = JSONObject()
+            val userId =  preferences.getString("name", "nothing just")
             try {
-                Log.d("username check",preferences.getString("name", "jj"))
-                userId.put("username", preferences.getString("name", "nothing just") + "Connected")
-                Log.e("username", preferences.getString("name", "hjj") + "Connected")
+//                Log.d("username check",preferences.getString("name", "jj"))
+//                userId.put("username", preferences.getString("name", "nothing just") + "Connected")
+//                Log.e("username", preferences.getString("name", "hjj") + "Connected")
+                mSocket.emit("NAME", userId)
+                mSocket.emit("SEND", onNewMessage)
 
-                mSocket.emit("Message", userId)
+                Log.d("username check", userId)
             } catch (e: JSONException) {
                 e.printStackTrace()
             }
@@ -96,9 +104,9 @@ class ChatRoomActivity: AppCompatActivity() {
                 message = data.getString("message")
 
 
-                val format = ChatModel(name, message)
-                mAdapter.addItem(format)
-                mAdapter.notifyDataSetChanged()
+//                val format = ChatModel(name, message)
+//                mAdapter.addItem(format)
+//                mAdapter.notifyDataSetChanged()
                 Log.e("new me",name )
             } catch (e: Exception) {
                 return@Runnable
@@ -124,20 +132,20 @@ class ChatRoomActivity: AppCompatActivity() {
 
     private fun sendMessage(){
 
-//        val item = ChatModel(preferences.getString("name","").toString(),message.text.toString())
-//        mAdapter.addItem(item)
-//        mAdapter.notifyDataSetChanged()
         val script = message.text.toString().trim ({it <= ' '})
         if(TextUtils.isEmpty(script)){
             return
         }
+        val item = ChatModel(preferences.getString("name","").toString(),message.text.toString())
+        mAdapter.addItem(item)
+        mAdapter.notifyDataSetChanged()
         message.setText("")
-        val jsonObject = JSONObject()
-        try{
-            jsonObject.put("name",preferences.getString("name",""))
-            jsonObject.put("message",script)
-        }catch (e:JSONException){
-            e.printStackTrace()
-        }
+//        val jsonObject = JSONObject()
+//        try{
+//            jsonObject.put("name",preferences.getString("name",""))
+//            jsonObject.put("message",script)
+//        }catch (e:JSONException){
+//            e.printStackTrace()
+//        }
     }
 }
