@@ -53,7 +53,6 @@ class ChatAdapter(private val context: Context, private val arrayList: ArrayList
     inner class Holder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         //친구목록<TextView> 모델의 변수들 정의하는부분
         val chatMessage = itemView.findViewById<TextView>(R.id.chat_Text)
-        val chatTime = itemView.findViewById<TextView>(R.id.chat_Time)
     }
 
     //상대가친 채팅 뷰홀더
@@ -62,7 +61,6 @@ class ChatAdapter(private val context: Context, private val arrayList: ArrayList
         //친구목록 모델의 변수들 정의하는부분
         val chatFrinedName = itemView.findViewById<TextView>(R.id.chat_You_Name)
         val chatMessage = itemView.findViewById<TextView>(R.id.chat_Text)
-        val chatTime = itemView.findViewById<TextView>(R.id.chat_Time)
 
 
     }
@@ -72,9 +70,9 @@ class ChatAdapter(private val context: Context, private val arrayList: ArrayList
 
         //내 아이디와 arraylist의 name이 같다면 내꺼 아니면 상대꺼
         return if (arrayList[position].name == preferences.getString("name","")) {
-            1
-        } else {
             2
+        } else {
+            1
         }
     }
 }
