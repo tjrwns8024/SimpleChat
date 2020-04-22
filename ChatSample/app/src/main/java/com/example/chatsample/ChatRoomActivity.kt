@@ -17,7 +17,10 @@ import kotlinx.android.synthetic.main.item_your_chat.*
 import org.json.JSONException
 import org.json.JSONObject
 import java.io.IOException
+import java.net.ConnectException
+import java.net.SocketException
 import java.net.URISyntaxException
+import java.net.UnknownHostException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -26,16 +29,14 @@ class ChatRoomActivity: AppCompatActivity() {
     private lateinit var message: EditText
     private lateinit var send_btn_message: Button
 
-    private var hasConnection:Boolean = false
-
-    private var mSocket: Socket = IO.socket("http://ec2-18-218-105-177.us-east-2.compute.amazonaws.com:8080/socket.io/")
+    private var mSocket: Socket? = null
 
     var arrayList = arrayListOf<ChatModel>()
     private val mAdapter = ChatAdapter(this, arrayList)
 
     override fun onStop() {
         super.onStop()
-        mSocket.disconnect()
+        mSocket?.disconnect()
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -55,45 +56,37 @@ class ChatRoomActivity: AppCompatActivity() {
         send_btn_message = findViewById(R.id.send_btn_message)
         message = findViewById(R.id.message)
 
-        if(savedInstanceState!=null){
-            hasConnection=savedInstanceState.getBoolean("hasConnection")
-        }
-
-        if(hasConnection){
-        }else {
             try{
-                mSocket.connect()
-                val result:Boolean = mSocket.connected()
+                mSocket = IO.socket("http://localhost:8080/socket.io/")
+                mSocket?.connect()
+                val result:Boolean = mSocket!!.connected()
                 if(result)  Log.d("socket connected", "소켓 연결 성공")
-                else Log.e("socket failed","소캣 실패")
-                Log.d("socket connect","지니감")
-            }catch (ue:URISyntaxException){
-                ue.printStackTrace()
+                else Log.e("socket failed", "소캣 실패$result")
+            }catch (se: SocketException){
+                Log.e("socket", "An exception occurred:\n ${se.printStackTrace()}")
             }
+            mSocket?.on("MESSAGE", onNewUser)
 
-            mSocket.on("MESSAGE", onNewUser)
 
-
-            val userId =  preferences.getString("name", "nothing just")
+            val userId =  preferences.getString("name", "nothing just").toString()
             try {
 //                Log.d("username check",preferences.getString("name", "jj"))
 //                userId.put("username", preferences.getString("name", "nothing just") + "Connected")
 //                Log.e("username", preferences.getString("name", "hjj") + "Connected")
-                mSocket.emit("NAME", userId)
-                mSocket.emit("SEND", onNewMessage)
+                mSocket?.emit("NAME", userId)
+                mSocket?.emit("SEND", message.text.toString())
 
                 Log.d("username check", userId)
             } catch (e: JSONException) {
                 e.printStackTrace()
             }
-        }
-        hasConnection = true
+
 
         send_btn_message.setOnClickListener {
             sendMessage()
         }
     }
-    internal var onNewMessage: Emitter.Listener = Emitter.Listener { args ->
+    private var onNewUser: Emitter.Listener = Emitter.Listener { args ->
         runOnUiThread(Runnable {
             val data = args[0] as JSONObject
             val name: String
@@ -104,31 +97,31 @@ class ChatRoomActivity: AppCompatActivity() {
                 message = data.getString("message")
 
 
-//                val format = ChatModel(name, message)
-//                mAdapter.addItem(format)
-//                mAdapter.notifyDataSetChanged()
+                val format = ChatModel(name, message)
+                mAdapter.addItem(format)
+                mAdapter.notifyDataSetChanged()
                 Log.e("new me",name )
             } catch (e: Exception) {
                 return@Runnable
             }
         })
     }
-    internal var onNewUser:Emitter.Listener = Emitter.Listener { args->
-        runOnUiThread(Runnable {
-            val length = args.size
-
-            if(length == 0){
-                return@Runnable
-            }
-            var username = args[0].toString()
-            try{
-                val b = JSONObject(username)
-                username = b.getString("username")
-            }catch (e: JSONException){
-                e.printStackTrace()
-            }
-        })
-    }
+//    internal var onNewMessage:Emitter.Listener = Emitter.Listener { args->
+//        runOnUiThread(Runnable {
+//            val length = args.size
+//
+//            if(length == 0){
+//                return@Runnable
+//            }
+//            var username = args[0].toString()
+//            try{
+//                val b = JSONObject(username)
+//                username = b.getString("username")
+//            }catch (e: JSONException){
+//                e.printStackTrace()
+//            }
+//        })
+//    }
 
     private fun sendMessage(){
 
