@@ -24,7 +24,6 @@ import java.net.UnknownHostException
 import java.sql.Time
 import java.text.SimpleDateFormat
 import java.util.*
-import kotlin.concurrent.thread
 
 class ChatRoomActivity: AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
@@ -60,27 +59,23 @@ class ChatRoomActivity: AppCompatActivity() {
         message = findViewById(R.id.message)
 
         //http://ec2-18-218-105-177.us-east-2.compute.amazonaws.com:8080/socket.io/
-            thread(start = true){
-                try{
-                    mSocket?.connect()
-
-                    Thread.sleep(50000)
+            try{
+                mSocket?.connect()
 
 //                val result:Boolean = mSocket!!.connected()
 //                if(result)  Log.d("socket connected", "소켓 연결 성공")
 //                else Log.e("socket failed", "소캣 실패$result")
-                    mSocket?.on("MESSAGE", onNewUser)
+                mSocket?.on("MESSAGE", onNewUser)
 
-                    val userId =  preferences.getString("name", "nothing just").toString()
-                    mSocket?.emit("NAME", userId)
-                    mSocket?.emit("SEND", message.text.toString())
+                val userId =  preferences.getString("name", "nothing just").toString()
+                mSocket?.emit("NAME", userId)
+                mSocket?.emit("SEND", message.text.toString())
 
-                    Log.d("username check", userId)
-                }catch (se: SocketException){
-                    Log.e("socket", "An exception occurred:\n ${se.printStackTrace()}")
-                }catch (e: JSONException) {
-                    e.printStackTrace()
-                }
+                Log.d("username check", userId)
+            }catch (se: SocketException){
+                Log.e("socket", "An exception occurred:\n ${se.printStackTrace()}")
+            }catch (e: JSONException) {
+                e.printStackTrace()
             }
 
 
