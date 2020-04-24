@@ -10,43 +10,35 @@ import android.widget.EditText
 import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.github.nkzawa.emitter.Emitter
-import com.github.nkzawa.socketio.client.IO
-import com.github.nkzawa.socketio.client.Socket
 import kotlinx.android.synthetic.main.activity_chat_room.*
-import kotlinx.android.synthetic.main.item_your_chat.*
-import org.json.JSONException
 import org.json.JSONObject
-import java.io.IOException
-import java.net.ConnectException
-import java.net.SocketException
-import java.net.URISyntaxException
-import java.net.UnknownHostException
-import java.sql.Time
-import java.text.SimpleDateFormat
-import java.util.*
 
 class ChatRoomActivity: AppCompatActivity() {
     private lateinit var preferences: SharedPreferences
-    private lateinit var message: EditText
-    private lateinit var send_btn_message: Button
-
-    private var mSocket = IO.socket("http://10.0.2.2:8080/socket.io/")
-
     var arrayList = arrayListOf<ChatModel>()
     private val mAdapter = ChatAdapter(this, arrayList)
-
-    override fun onStop() {
-        super.onStop()
-        mSocket?.disconnect()
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_chat_room)
         preferences = getSharedPreferences("usersign", Context.MODE_PRIVATE)
 
+        SocketOb.connectSocket()
 
-        Log.d("preferences check",preferences.getString("name","nothing ")+"ddfd")
+        SocketOb.addOnNewUserEvent(onNewUser)
+
+        Log.d("preferences check",preferences.getString("name","nothing "))
+
+
+        val userId =  preferences.getString("name", "nothing just").toString()
+        SocketOb.emitUserId(userId)
+
+        val messageText = message.text.toString()
+        if(messageText != ""){
+            SocketOb.emitMessageText(messageText)
+        }
+
+        Log.d("username check", userId)
 
         //어댑터 선언
         chat_recyclerview.adapter = mAdapter
@@ -55,35 +47,19 @@ class ChatRoomActivity: AppCompatActivity() {
         chat_recyclerview.layoutManager = lm
         chat_recyclerview.setHasFixedSize(true)
 
-        send_btn_message = findViewById(R.id.send_btn_message)
-        message = findViewById(R.id.message)
-
         //http://ec2-18-218-105-177.us-east-2.compute.amazonaws.com:8080/socket.io/
-            try{
-                mSocket?.connect()
-
-//                val result:Boolean = mSocket!!.connected()
-//                if(result)  Log.d("socket connected", "소켓 연결 성공")
-//                else Log.e("socket failed", "소캣 실패$result")
-                mSocket?.on("MESSAGE", onNewUser)
-
-                val userId =  preferences.getString("name", "nothing just").toString()
-                mSocket?.emit("NAME", userId)
-                mSocket?.emit("SEND", message.text.toString())
-
-                Log.d("username check", userId)
-            }catch (se: SocketException){
-                Log.e("socket", "An exception occurred:\n ${se.printStackTrace()}")
-            }catch (e: JSONException) {
-                e.printStackTrace()
-            }
-
 
         send_btn_message.setOnClickListener {
             sendMessage()
         }
     }
-    private var onNewUser: Emitter.Listener = Emitter.Listener { args ->
+
+    override fun onStop() {
+        super.onStop()
+        SocketOb.disconnectSocket()
+    }
+
+    private val onNewUser: Emitter.Listener = Emitter.Listener { args ->
         runOnUiThread(Runnable {
             val data = args[0] as JSONObject
             val name: String
@@ -103,23 +79,6 @@ class ChatRoomActivity: AppCompatActivity() {
             }
         })
     }
-//    internal var onNewMessage:Emitter.Listener = Emitter.Listener { args->
-//        runOnUiThread(Runnable {
-//            val length = args.size
-//
-//            if(length == 0){
-//                return@Runnable
-//            }
-//            var username = args[0].toString()
-//            try{
-//                val b = JSONObject(username)
-//                username = b.getString("username")
-//            }catch (e: JSONException){
-//                e.printStackTrace()
-//            }
-//        })
-//    }
-
     private fun sendMessage(){
 
         val script = message.text.toString().trim ({it <= ' '})
